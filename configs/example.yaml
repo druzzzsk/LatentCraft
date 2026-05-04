@@ -1,0 +1,14 @@
+# Пример конфигурации эксперимента (фазы 1+ заполнят поля).
+experiment_name: example
+seed: 42
+
+model:
+  name: smiles-vae
+  checkpoint: null
+
+optimizer:
+  name: gradient_ascent
+  steps: 100
+
+data:
+  path: data/zinc_250.csv
