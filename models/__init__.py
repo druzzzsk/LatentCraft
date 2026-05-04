@@ -1,1 +1,2 @@
-# Обёртки над внешними VAE (фазы 2+).
+from .smiles_vae import SmilesVAE
+from .property_predictor import PropertyPredictor

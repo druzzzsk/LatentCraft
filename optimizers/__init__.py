@@ -1,1 +1,1 @@
-# Методы оптимизации в латентном пространстве (фазы 3+).
+from .gradient_ascent import gradient_ascent

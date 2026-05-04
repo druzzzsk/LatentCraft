@@ -1,0 +1,28 @@
+experiment_name: smiles_vae_zinc
+seed: 42
+
+model:
+  max_len: 120
+  hidden_dim: 196
+  conv_depth: 4
+  conv_start_filters: 16
+  gru_depth: 4
+  gru_dim: 488
+
+training:
+  epochs: 70
+  batch_size: 128
+  lr: 0.0004
+  kl_anneal_start: 29   
+  kl_anneal_slope: 0.5  
+  kl_weight: 1.0        
+
+data:
+  path: data/zinc_250.csv
+  max_len: 120
+  val_split: 0.1
+
+output:
+  dir: results
+  checkpoint: results/smiles_vae.pt
+  charset: results/charset.yaml
