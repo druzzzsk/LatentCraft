@@ -1,0 +1,9 @@
+rdkit
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+scikit-learn
+umap-learn
+pyyaml
