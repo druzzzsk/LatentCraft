@@ -1,0 +1,27 @@
+experiment_name: bayesian_opt_logp
+seed: 42
+
+model:
+  checkpoint: results/smiles_vae.pt
+  charset: results/charset.yaml
+  max_len: 120
+  hidden_dim: 196
+  conv_depth: 4
+  conv_start_filters: 16
+  gru_depth: 4
+  gru_dim: 488
+
+optimizer:
+  name: bayesian_opt
+  n_init: 5
+  n_iter: 20
+  n_seeds: 50
+  target_property: logP
+
+data:
+  path: data/zinc_250.csv
+  max_len: 120
+
+output:
+  dir: results
+  results_file: results/bayesian_opt_results.json
