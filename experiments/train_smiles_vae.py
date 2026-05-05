@@ -1,4 +1,5 @@
 import argparse
+import csv
 import math
 import os
 import sys
@@ -97,30 +98,61 @@ def main(config_path):
 
     optimizer = optim.Adam(model.parameters(), lr=train_cfg["lr"])
 
+    metrics_path = os.path.join(out_cfg["dir"], "training_metrics.csv")
+
     # --- Training loop ---
     best_val_loss = float("inf")
-    for epoch in range(1, train_cfg["epochs"] + 1):
-        kl_weight = kl_weight_sigmoid(
-            epoch,
-            kl_max=train_cfg["kl_weight"],
-            anneal_start=train_cfg["kl_anneal_start"],
-            anneal_slope=train_cfg["kl_anneal_slope"],
+    with open(metrics_path, "w", newline="") as metrics_file:
+        metrics_writer = csv.writer(metrics_file)
+        metrics_writer.writerow(
+            [
+                "epoch",
+                "kl_weight",
+                "train_loss",
+                "train_recon",
+                "train_kl",
+                "val_loss",
+                "val_recon",
+                "val_kl",
+            ]
         )
+        for epoch in range(1, train_cfg["epochs"] + 1):
+            kl_weight = kl_weight_sigmoid(
+                epoch,
+                kl_max=train_cfg["kl_weight"],
+                anneal_start=train_cfg["kl_anneal_start"],
+                anneal_slope=train_cfg["kl_anneal_slope"],
+            )
 
-        tr_loss, tr_recon, tr_kl = train_epoch(model, train_loader, optimizer, kl_weight, device)
-        vl_loss, vl_recon, vl_kl = val_epoch(model, val_loader, kl_weight, device)
+            tr_loss, tr_recon, tr_kl = train_epoch(model, train_loader, optimizer, kl_weight, device)
+            vl_loss, vl_recon, vl_kl = val_epoch(model, val_loader, kl_weight, device)
 
-        print(
-            f"Epoch {epoch:3d}/{train_cfg['epochs']} | kl_w={kl_weight:.3f} | "
-            f"train: loss={tr_loss:.3f} recon={tr_recon:.3f} kl={tr_kl:.3f} | "
-            f"val: loss={vl_loss:.3f} recon={vl_recon:.3f} kl={vl_kl:.3f}"
-        )
+            print(
+                f"Epoch {epoch:3d}/{train_cfg['epochs']} | kl_w={kl_weight:.3f} | "
+                f"train: loss={tr_loss:.3f} recon={tr_recon:.3f} kl={tr_kl:.3f} | "
+                f"val: loss={vl_loss:.3f} recon={vl_recon:.3f} kl={vl_kl:.3f}"
+            )
 
-        if vl_loss < best_val_loss:
-            best_val_loss = vl_loss
-            torch.save(model.state_dict(), out_cfg["checkpoint"])
+            metrics_writer.writerow(
+                [
+                    epoch,
+                    kl_weight,
+                    tr_loss,
+                    tr_recon,
+                    tr_kl,
+                    vl_loss,
+                    vl_recon,
+                    vl_kl,
+                ]
+            )
+            metrics_file.flush()
+
+            if vl_loss < best_val_loss:
+                best_val_loss = vl_loss
+                torch.save(model.state_dict(), out_cfg["checkpoint"])
 
     print(f"\nTraining complete. Best val loss: {best_val_loss:.3f}")
+    print(f"Metrics CSV: {metrics_path}")
     print(f"Checkpoint saved to {out_cfg['checkpoint']}")
 
 
