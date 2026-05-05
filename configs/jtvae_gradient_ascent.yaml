@@ -1,0 +1,28 @@
+experiment_name: jtvae_gradient_ascent_logp
+seed: 42
+
+model:
+  vocab: models/external/jtvae/data/moses/vocab.txt
+  checkpoint: models/external/jtvae/fast_molvae/moses-h450z56/model.iter-400000
+  hidden_size: 450
+  latent_size: 56
+  depthT: 20
+  depthG: 3
+
+predictor:
+  checkpoint: results/jtvae_property_predictor.pt
+  hidden_dim: 56
+
+optimizer:
+  name: gradient_ascent
+  steps: 80
+  lr: 0.1
+  n_seeds: 100
+  target_property: logP
+
+data:
+  path: data/zinc_250.csv
+
+output:
+  dir: results
+  results_file: results/jtvae_gradient_ascent_results.json

@@ -1,0 +1,16 @@
+experiment_name: jtvae_moses
+
+model:
+  vocab: models/external/jtvae/data/moses/vocab.txt
+  checkpoint: models/external/jtvae/fast_molvae/moses-h450z56/model.iter-400000
+  hidden_size: 450
+  latent_size: 56
+  depthT: 20
+  depthG: 3
+
+data:
+  path: data/zinc_250.csv
+
+output:
+  dir: results
+  predictor_checkpoint: results/jtvae_property_predictor.pt
