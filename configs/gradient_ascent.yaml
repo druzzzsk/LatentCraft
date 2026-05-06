@@ -18,7 +18,8 @@ predictor:
 optimizer:
   name: gradient_ascent
   steps: 80
-  lr: 0.1
+  lr: 0.01
+  z_penalty: 0.1
   n_seeds: 100
   target_property: logP   
 

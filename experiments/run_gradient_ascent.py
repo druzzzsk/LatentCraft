@@ -85,6 +85,7 @@ def main(config_path):
         charset=charset,
         steps=opt_cfg["steps"],
         lr=opt_cfg["lr"],
+        z_penalty=opt_cfg.get("z_penalty", 0.1),
         device=device,
     )
 
