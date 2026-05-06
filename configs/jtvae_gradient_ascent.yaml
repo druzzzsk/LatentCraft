@@ -10,7 +10,7 @@ model:
   depthG: 3
 
 predictor:
-  checkpoint: results/jtvae_property_predictor.pt
+  checkpoint: results/jtvae/jtvae_property_predictor.pt
   hidden_dim: 56
 
 optimizer:
@@ -25,4 +25,4 @@ data:
 
 output:
   dir: results
-  results_file: results/jtvae_gradient_ascent_results.json
+  results_file: results/jtvae/jtvae_gradient_ascent_results.json

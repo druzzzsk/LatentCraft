@@ -2,8 +2,8 @@ experiment_name: gradient_ascent_logp
 seed: 42
 
 model:
-  checkpoint: results/smiles_vae.pt
-  charset: results/charset.yaml
+  checkpoint: results/smiles_vae/smiles_vae.pt
+  charset: results/smiles_vae/charset.yaml
   max_len: 120
   hidden_dim: 196
   conv_depth: 4
@@ -12,7 +12,7 @@ model:
   gru_dim: 488
 
 predictor:
-  checkpoint: results/property_predictor.pt
+  checkpoint: results/smiles_vae/property_predictor.pt
   hidden_dim: 196
 
 optimizer:
@@ -28,4 +28,4 @@ data:
 
 output:
   dir: results
-  results_file: results/gradient_ascent_results.json
+  results_file: results/smiles_vae/gradient_ascent_results.json

@@ -2,8 +2,8 @@ experiment_name: cma_es_logp
 seed: 42
 
 model:
-  checkpoint: results/smiles_vae.pt
-  charset: results/charset.yaml
+  checkpoint: results/smiles_vae/smiles_vae.pt
+  charset: results/smiles_vae/charset.yaml
   max_len: 120
   hidden_dim: 196
   conv_depth: 4
@@ -25,4 +25,4 @@ data:
 
 output:
   dir: results
-  results_file: results/cma_es_results.json
+  results_file: results/smiles_vae/cma_es_results.json

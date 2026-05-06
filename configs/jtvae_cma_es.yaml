@@ -22,4 +22,4 @@ data:
 
 output:
   dir: results
-  results_file: results/jtvae_cma_es_results.json
+  results_file: results/jtvae/jtvae_cma_es_results.json

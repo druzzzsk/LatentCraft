@@ -21,4 +21,4 @@ data:
 
 output:
   dir: results
-  results_file: results/jtvae_bayesian_opt_results.json
+  results_file: results/jtvae/jtvae_bayesian_opt_results.json

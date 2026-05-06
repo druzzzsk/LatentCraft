@@ -12,5 +12,5 @@ data:
   path: data/zinc_250.csv
 
 output:
-  dir: results
-  predictor_checkpoint: results/jtvae_property_predictor.pt
+  dir: results/jtvae
+  predictor_checkpoint: results/jtvae/jtvae_property_predictor.pt
