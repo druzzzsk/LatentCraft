@@ -1,4 +1,5 @@
 experiment_name: jtvae_moses
+seed: 42
 
 model:
   vocab: models/external/jtvae/data/moses/vocab.txt

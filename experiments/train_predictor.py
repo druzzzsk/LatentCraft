@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import sys
 
@@ -100,38 +101,58 @@ def main(config_path, target_property):
     EPOCHS = 50
     BATCH = 512
 
-    print(f"Training predictor for {EPOCHS} epochs...")
-    for epoch in range(1, EPOCHS + 1):
-        predictor.train()
-        perm = torch.randperm(n_train, device=device)
-        train_loss = 0.0
-        n_batches = 0
-        for i in range(0, n_train, BATCH):
-            idx_b = perm[i:i + BATCH]
-            z_b = z_train[idx_b]
-            y_b = y_train[idx_b]
-            optimizer.zero_grad()
-            pred = predictor(z_b)
-            loss = criterion(pred, y_b)
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-            n_batches += 1
+    metrics_path = out_cfg.get("metrics_csv")
+    if not metrics_path:
+        metrics_path = os.path.join(
+            out_cfg["dir"], f"smiles_vae_predictor_metrics_{target_property}.csv"
+        )
 
-        if epoch % 10 == 0 or epoch == 1:
+    save_path = out_cfg.get("predictor_checkpoint")
+    if not save_path:
+        save_path = os.path.join(out_cfg["dir"], "property_predictor.pt")
+
+    print(f"Training predictor for {EPOCHS} epochs...")
+    print(f"Metrics CSV: {metrics_path}")
+    with open(metrics_path, "w", newline="") as metrics_file:
+        metrics_writer = csv.writer(metrics_file)
+        metrics_writer.writerow(["epoch", "train_mse", "val_mse", "val_r2"])
+
+        for epoch in range(1, EPOCHS + 1):
+            predictor.train()
+            perm = torch.randperm(n_train, device=device)
+            train_loss = 0.0
+            n_batches = 0
+            for i in range(0, n_train, BATCH):
+                idx_b = perm[i:i + BATCH]
+                z_b = z_train[idx_b]
+                y_b = y_train[idx_b]
+                optimizer.zero_grad()
+                pred = predictor(z_b)
+                loss = criterion(pred, y_b)
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item()
+                n_batches += 1
+
+            train_mse = train_loss / n_batches
             predictor.eval()
             with torch.no_grad():
                 val_pred = predictor(z_val)
                 val_mse = criterion(val_pred, y_val).item()
                 val_r2 = r2_score(y_val, val_pred).item()
-            print(
-                f"Epoch {epoch:3d}/{EPOCHS} | train MSE: {train_loss / n_batches:.4f} | "
-                f"val MSE: {val_mse:.4f} | val R2: {val_r2:.4f}"
-            )
 
-    save_path = out_cfg["dir"] + "/property_predictor.pt"
+            metrics_writer.writerow([epoch, train_mse, val_mse, val_r2])
+            metrics_file.flush()
+
+            if epoch % 10 == 0 or epoch == 1:
+                print(
+                    f"Epoch {epoch:3d}/{EPOCHS} | train MSE: {train_mse:.4f} | "
+                    f"val MSE: {val_mse:.4f} | val R2: {val_r2:.4f}"
+                )
+
     torch.save(predictor.state_dict(), save_path)
     print(f"Predictor saved to {save_path}")
+    print(f"Metrics saved to {metrics_path}")
 
 
 if __name__ == "__main__":

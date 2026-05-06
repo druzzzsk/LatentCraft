@@ -27,3 +27,4 @@ output:
   dir: results/smiles_vae
   checkpoint: results/smiles_vae/smiles_vae.pt
   charset: results/smiles_vae/charset.yaml
+  predictor_checkpoint: results/smiles_vae/property_predictor.pt
