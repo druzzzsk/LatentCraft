@@ -16,3 +16,4 @@ build/
 .ruff_cache/
 *.sh
 *.out
+outs/
