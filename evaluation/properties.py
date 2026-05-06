@@ -1,6 +1,8 @@
-from rdkit import Chem
+from rdkit import Chem, RDLogger
 from rdkit.Chem import Crippen, QED
 from rdkit.Contrib.SA_Score import sascorer
+
+RDLogger.DisableLog("rdApp.*")
 
 
 def _to_mol(smiles):
