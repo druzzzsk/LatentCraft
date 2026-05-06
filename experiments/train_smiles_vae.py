@@ -100,8 +100,14 @@ def main(config_path):
 
     metrics_path = os.path.join(out_cfg["dir"], "training_metrics.csv")
 
+    last_checkpoint = out_cfg["checkpoint"].replace(".pt", "_last.pt")
+    patience = train_cfg.get("early_stopping_patience", 0)
+
     # --- Training loop ---
-    best_val_loss = float("inf")
+    # Track best by val_recon (not val_loss) to avoid saving the AE-phase checkpoint
+    # when kl_weight is still near zero.
+    best_val_recon = float("inf")
+    epochs_no_improve = 0
     with open(metrics_path, "w", newline="") as metrics_file:
         metrics_writer = csv.writer(metrics_file)
         metrics_writer.writerow(
@@ -147,13 +153,26 @@ def main(config_path):
             )
             metrics_file.flush()
 
-            if vl_loss < best_val_loss:
-                best_val_loss = vl_loss
-                torch.save(model.state_dict(), out_cfg["checkpoint"])
+            # Best checkpoint: track val_recon only after KL is mostly active
+            if kl_weight > 0.5:
+                if vl_recon < best_val_recon:
+                    best_val_recon = vl_recon
+                    epochs_no_improve = 0
+                    torch.save(model.state_dict(), out_cfg["checkpoint"])
+                else:
+                    epochs_no_improve += 1
 
-    print(f"\nTraining complete. Best val loss: {best_val_loss:.3f}")
+            # Always save last epoch so we never lose the fully-trained model
+            torch.save(model.state_dict(), last_checkpoint)
+
+            if patience > 0 and kl_weight > 0.5 and epochs_no_improve >= patience:
+                print(f"\nEarly stopping: no val_recon improvement for {patience} epochs.")
+                break
+
+    print(f"\nTraining complete. Best val_recon (kl_weight>0.5): {best_val_recon:.3f}")
     print(f"Metrics CSV: {metrics_path}")
-    print(f"Checkpoint saved to {out_cfg['checkpoint']}")
+    print(f"Best checkpoint: {out_cfg['checkpoint']}")
+    print(f"Last epoch checkpoint: {last_checkpoint}")
 
 
 if __name__ == "__main__":

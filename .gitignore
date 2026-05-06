@@ -2,7 +2,6 @@ models/external/
 .venv/
 .docs/
 .cursor/
-results/
 checkpoints/
 *.ckpt
 *.pt

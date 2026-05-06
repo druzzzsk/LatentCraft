@@ -10,12 +10,13 @@ model:
   gru_dim: 488
 
 training:
-  epochs: 70
+  epochs: 100
   batch_size: 128
   lr: 0.0004
-  kl_anneal_start: 29   
-  kl_anneal_slope: 0.5  
-  kl_weight: 1.0        
+  kl_anneal_start: 40   # centre of sigmoid — KL starts rising later
+  kl_anneal_slope: 0.2  # gentler slope → no loss spikes during warmup
+  kl_weight: 1.0
+  early_stopping_patience: 15  # epochs without val_recon improvement before stopping
 
 data:
   path: data/zinc_250.csv
