@@ -24,6 +24,6 @@ data:
   val_split: 0.1
 
 output:
-  dir: results
-  checkpoint: results/smiles_vae.pt
-  charset: results/charset.yaml
+  dir: results/smiles_vae
+  checkpoint: results/smiles_vae/smiles_vae.pt
+  charset: results/smiles_vae/charset.yaml
