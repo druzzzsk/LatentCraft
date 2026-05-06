@@ -55,15 +55,18 @@ class JTVAEWrapper:
         set_device(device)
         self.model.eval()
 
-        # Filter out SMILES that fail to parse into MolTree
+        # Filter out SMILES that fail to parse or contain fragments not in vocab
         valid_trees = []
         valid_idx = []
         for i, s in enumerate(smiles_list):
             try:
                 tree = MolTree(s)
-                if len(tree.nodes) > 0:
-                    valid_trees.append(tree)
-                    valid_idx.append(i)
+                if len(tree.nodes) == 0:
+                    continue
+                if any(node.smiles not in self.vocab.vmap for node in tree.nodes):
+                    continue
+                valid_trees.append(tree)
+                valid_idx.append(i)
             except Exception:
                 pass
 
