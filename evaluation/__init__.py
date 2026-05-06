@@ -7,6 +7,7 @@ from .optimization_metrics import (
     pareto_front,
 )
 from .visualization import (
+    plot_pearson_correlation_heatmap,
     plot_property_vs_similarity,
     plot_latent_space,
     plot_pareto_front,

@@ -3,6 +3,41 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from .optimization_metrics import pareto_front
 
+# Как в notebooks/eda.ipynb
+EDA_PALETTE = [
+    "#F4A261",
+    "#E9C46A",
+    "#F6BD8D",
+    "#F7D5B1",
+    "#E76F51",
+    "#FDF0E0",
+]
+
+
+def apply_eda_plot_style():
+    sns.set_theme(style="whitegrid")
+    sns.set_palette(EDA_PALETTE)
+
+
+def plot_pearson_correlation_heatmap(corr, title="Pearson correlation", figsize=(6, 6)):
+    """Матрица корреляции в том же стиле, что ячейка с Pearson в notebooks/eda.ipynb."""
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(
+        corr,
+        annot=True,
+        fmt=".2f",
+        cmap=sns.light_palette(EDA_PALETTE[0], as_cmap=True),
+        vmin=-1,
+        vmax=1,
+        center=0,
+        square=True,
+        linewidths=0.5,
+        ax=ax,
+    )
+    ax.set_title(title, fontweight="bold", fontsize=14)
+    plt.tight_layout()
+    return fig
+
 
 def plot_property_vs_similarity(improvements, similarities, title="Property improvement vs. Similarity"):
     """Scatter-plot: прирост свойства (ось Y) vs. Tanimoto similarity к seed (ось X)."""
@@ -98,20 +133,27 @@ def plot_comparison_table(results_dict, title="Model × Optimizer × Metric"):
                 if val is not None:
                     data[r_idx, c_idx] = val
 
+        mask = np.isnan(data)
+
         sns.heatmap(
             data,
+            mask=mask,
             ax=ax,
             xticklabels=cols,
             yticklabels=rows,
             annot=True,
-            fmt=".3f",
-            cmap="YlGnBu",
+            fmt=".2f",
+            cmap=sns.light_palette(EDA_PALETTE[0], as_cmap=True),
+            vmin=-1,
+            vmax=1,
+            center=0,
+            square=True,
             linewidths=0.5,
         )
-        ax.set_title(metric)
+        ax.set_title(metric, fontweight="bold", fontsize=14)
         ax.set_xlabel("Optimizer")
         ax.set_ylabel("Model")
 
-    fig.suptitle(title, fontsize=13)
+    fig.suptitle(title, fontsize=14, fontweight="bold")
     plt.tight_layout()
     return fig

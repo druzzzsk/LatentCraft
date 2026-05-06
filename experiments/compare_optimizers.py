@@ -31,6 +31,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from evaluation import plot_comparison_table, plot_property_vs_similarity, plot_pareto_front
 from evaluation import compute_logp, compute_qed, compute_sa
+from evaluation.visualization import EDA_PALETTE, apply_eda_plot_style
 from evaluation import validity, property_improvement, success_rate, similarity_to_seed
 
 PROP_FN = {
@@ -94,9 +95,15 @@ def print_summary(name, metrics):
     print(f"  Mean similarity:   {v:.3f}" if v is not None else "  Mean similarity:   N/A")
 
 
+def _series_colors(results_map):
+    names = list(results_map.keys())
+    return {n: EDA_PALETTE[i % len(EDA_PALETTE)] for i, n in enumerate(names)}
+
+
 def plot_trajectories(results_map, out_dir):
     """Кривые оптимизации (mean best property по шагам) для всех оптимизаторов / моделей."""
     fig, ax = plt.subplots(figsize=(9, 5))
+    colors = _series_colors(results_map)
 
     for name, result in results_map.items():
         if result is None or "trajectory" not in result:
@@ -105,7 +112,9 @@ def plot_trajectories(results_map, out_dir):
         if not traj:
             continue
         steps, values = zip(*traj)
-        ax.plot(steps, values, marker="o", markersize=3, label=name)
+        ax.plot(
+            steps, values, marker="o", markersize=3, label=name, color=colors[name]
+        )
 
     ax.set_xlabel("Step")
     ax.set_ylabel("Mean best property value")
@@ -127,6 +136,7 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
     n_rows = (len(valid_names) + n_cols - 1) // n_cols
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows), squeeze=False)
     axes_flat = [ax for row in axes for ax in row]
+    colors = _series_colors(results_map)
 
     for ax, name in zip(axes_flat, valid_names):
         m = metrics_map[name]
@@ -138,8 +148,15 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
             ax.set_title(f"{name}\n(no valid data)")
             continue
 
-        ax.scatter(sims_raw, imps, alpha=0.5, edgecolors="none", s=15)
-        ax.axhline(0, color="gray", linewidth=0.8, linestyle="--")
+        ax.scatter(
+            sims_raw,
+            imps,
+            alpha=0.55,
+            edgecolors="none",
+            s=15,
+            color=colors[name],
+        )
+        ax.axhline(0, color="#2C3E50", linewidth=0.8, linestyle="--", alpha=0.6)
         ax.set_xlabel("Tanimoto similarity to seed")
         ax.set_ylabel("Property improvement (Δ)")
         ax.set_title(name)
@@ -175,9 +192,13 @@ def plot_model_comparison_bar(metrics_map, out_dir):
         return
 
     x = np.arange(len(labels))
+    color_by_name = _series_colors(
+        {k: v for k, v in metrics_map.items() if v is not None}
+    )
+    bar_colors = [color_by_name[l] for l in labels]
     fig, axes = plt.subplots(1, len(metric_names), figsize=(5 * len(metric_names), 4), squeeze=False)
     for ax, metric in zip(axes[0], metric_names):
-        ax.bar(x, data[metric])
+        ax.bar(x, data[metric], color=bar_colors, edgecolor="white", linewidth=0.8)
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=8)
         ax.set_title(metric.replace("_", " ").capitalize())
@@ -203,6 +224,7 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
+    apply_eda_plot_style()
 
     results_map = {}
     # SMILES-VAE
@@ -236,7 +258,9 @@ def main():
     for name, metrics in metrics_map.items():
         if metrics is None:
             continue
-        comparison_dict[name] = {
+        parts = name.split(" / ", 1)
+        key = (parts[0], parts[1]) if len(parts) == 2 else (name, "")
+        comparison_dict[key] = {
             k: v for k, v in metrics.items()
             if k in ("validity", "mean_improvement", "success_rate", "mean_similarity")
             and v is not None
