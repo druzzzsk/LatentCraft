@@ -1,0 +1,35 @@
+[
+  {
+    "optimizer": "bayesian_opt",
+    "target_property": "logP",
+    "validity": 0.68,
+    "uniqueness": 1.0,
+    "diversity": 0.863265553477385,
+    "novelty": 0.7941176470588235,
+    "mean_improvement": 0.6722047058823534,
+    "success_rate": 0.5882352941176471,
+    "mean_similarity": 0.5657370899589881
+  },
+  {
+    "optimizer": "gradient_ascent",
+    "target_property": "logP",
+    "validity": 0.38,
+    "uniqueness": 1.0,
+    "diversity": 0.8616306357418886,
+    "novelty": 0.5,
+    "mean_improvement": 0.2828163157894739,
+    "success_rate": 0.39473684210526316,
+    "mean_similarity": 0.7652348754245457
+  },
+  {
+    "optimizer": "cma_es",
+    "target_property": "logP",
+    "validity": 0.67,
+    "uniqueness": 1.0,
+    "diversity": 0.8683416111525062,
+    "novelty": 0.8656716417910447,
+    "mean_improvement": 0.8305464179104486,
+    "success_rate": 0.7164179104477612,
+    "mean_similarity": 0.5379952451269672
+  }
+]

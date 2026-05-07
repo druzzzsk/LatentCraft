@@ -33,6 +33,7 @@ from evaluation import plot_comparison_table, plot_property_vs_similarity, plot_
 from evaluation import compute_logp, compute_qed, compute_sa
 from evaluation.visualization import EDA_PALETTE, apply_eda_plot_style
 from evaluation import validity, property_improvement, success_rate, similarity_to_seed
+from evaluation.metrics import uniqueness, diversity, novelty
 
 PROP_FN = {
     "logP": compute_logp,
@@ -48,7 +49,7 @@ def load_result(path):
         return json.load(f)
 
 
-def recalculate_metrics(result):
+def recalculate_metrics(result, train_smiles=None):
     """Пересчитываем метрики через RDKit на случай, если оптимизатор использовал predictor."""
     if result is None:
         return None
@@ -70,6 +71,9 @@ def recalculate_metrics(result):
         "mean_improvement": mean_imp,
         "success_rate": s_rate,
         "mean_similarity": mean_sim,
+        "uniqueness": uniqueness(opts),
+        "diversity": diversity(opts),
+        "novelty": novelty(opts, train_smiles) if train_smiles else None,
         "similarities": sims,
         "improvements_raw": [
             (prop_fn(o) - prop_fn(s))
@@ -86,13 +90,20 @@ def print_summary(name, metrics):
     if metrics is None:
         print("  (результаты не найдены)")
         return
-    print(f"  Validity:          {metrics['validity']:.3f}")
-    v = metrics['mean_improvement']
-    print(f"  Mean improvement:  {v:.4f}" if v is not None else "  Mean improvement:  N/A")
-    v = metrics['success_rate']
-    print(f"  Success rate:      {v:.3f}" if v is not None else "  Success rate:      N/A")
-    v = metrics['mean_similarity']
-    print(f"  Mean similarity:   {v:.3f}" if v is not None else "  Mean similarity:   N/A")
+    rows = [
+        ("Validity",         metrics.get("validity")),
+        ("Mean improvement", metrics.get("mean_improvement")),
+        ("Success rate",     metrics.get("success_rate")),
+        ("Mean similarity",  metrics.get("mean_similarity")),
+        ("Uniqueness",       metrics.get("uniqueness")),
+        ("Diversity",        metrics.get("diversity")),
+        ("Novelty",          metrics.get("novelty")),
+    ]
+    for label, v in rows:
+        if v is None:
+            print(f"  {label:<20} N/A")
+        else:
+            print(f"  {label:<20} {v:.4f}")
 
 
 def _series_colors(results_map):
@@ -173,10 +184,13 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
 
 def plot_model_comparison_bar(metrics_map, out_dir):
     """
-    Bar chart сравнения моделей и оптимизаторов по 4 метрикам.
+    Bar chart сравнения моделей и оптимизаторов по всем метрикам.
     Строится только если есть результаты более чем для одной модели.
     """
-    metric_names = ["validity", "mean_improvement", "success_rate", "mean_similarity"]
+    metric_names = [
+        "validity", "mean_improvement", "success_rate",
+        "mean_similarity", "uniqueness", "diversity", "novelty",
+    ]
     labels = []
     data = {m: [] for m in metric_names}
 
@@ -196,12 +210,18 @@ def plot_model_comparison_bar(metrics_map, out_dir):
         {k: v for k, v in metrics_map.items() if v is not None}
     )
     bar_colors = [color_by_name[l] for l in labels]
-    fig, axes = plt.subplots(1, len(metric_names), figsize=(5 * len(metric_names), 4), squeeze=False)
-    for ax, metric in zip(axes[0], metric_names):
+    n_cols = min(4, len(metric_names))
+    n_rows = (len(metric_names) + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows), squeeze=False)
+    axes_flat = [ax for row in axes for ax in row]
+    for ax, metric in zip(axes_flat, metric_names):
         ax.bar(x, data[metric], color=bar_colors, edgecolor="white", linewidth=0.8)
         ax.set_xticks(x)
         ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=8)
         ax.set_title(metric.replace("_", " ").capitalize())
+
+    for ax in axes_flat[len(metric_names):]:
+        ax.set_visible(False)
 
     fig.suptitle("Model × Optimizer comparison", fontsize=13)
     plt.tight_layout()
@@ -248,7 +268,15 @@ def main():
         print("Не найден ни один файл результатов. Передайте пути через аргументы.")
         return
 
-    metrics_map = {name: recalculate_metrics(result) for name, result in results_map.items()}
+    train_smiles = []
+    train_csv = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "zinc_250.csv")
+    if os.path.exists(train_csv):
+        import csv
+        with open(train_csv, newline="") as f:
+            reader = csv.DictReader(f)
+            train_smiles = [row["smiles"] for row in reader]
+
+    metrics_map = {name: recalculate_metrics(result, train_smiles) for name, result in results_map.items()}
 
     for name, metrics in metrics_map.items():
         print_summary(name, metrics)
@@ -260,10 +288,13 @@ def main():
             continue
         parts = name.split(" / ", 1)
         key = (parts[0], parts[1]) if len(parts) == 2 else (name, "")
+        scalar_keys = (
+            "validity", "mean_improvement", "success_rate",
+            "mean_similarity", "uniqueness", "diversity", "novelty",
+        )
         comparison_dict[key] = {
             k: v for k, v in metrics.items()
-            if k in ("validity", "mean_improvement", "success_rate", "mean_similarity")
-            and v is not None
+            if k in scalar_keys and v is not None
         }
 
     if comparison_dict:

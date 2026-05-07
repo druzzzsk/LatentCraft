@@ -135,6 +135,11 @@ def plot_comparison_table(results_dict, title="Model × Optimizer × Metric"):
 
         mask = np.isnan(data)
 
+        valid_vals = data[~mask]
+        vmin = float(valid_vals.min()) if valid_vals.size else 0
+        vmax = float(valid_vals.max()) if valid_vals.size else 1
+        center = (vmin + vmax) / 2
+
         sns.heatmap(
             data,
             mask=mask,
@@ -144,9 +149,9 @@ def plot_comparison_table(results_dict, title="Model × Optimizer × Metric"):
             annot=True,
             fmt=".2f",
             cmap=sns.light_palette(EDA_PALETTE[0], as_cmap=True),
-            vmin=-1,
-            vmax=1,
-            center=0,
+            vmin=vmin,
+            vmax=vmax,
+            center=center,
             square=True,
             linewidths=0.5,
         )
