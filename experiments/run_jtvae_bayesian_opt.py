@@ -19,7 +19,7 @@ from evaluation import (
     property_improvement,
     success_rate,
     similarity_to_seed,
-    compute_logp, compute_qed, compute_sa,
+    compute_logp, compute_qed, compute_sa, compute_penalized_logp,
     plot_property_vs_similarity,
     plot_pareto_front,
 )
@@ -28,6 +28,7 @@ PROP_FN = {
     "logP": compute_logp,
     "qed": compute_qed,
     "SAS": compute_sa,
+    "penalized_logP": compute_penalized_logp,
 }
 
 

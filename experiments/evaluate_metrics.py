@@ -38,8 +38,13 @@ def compute_all_metrics(data, train_smiles):
     seed = data["seed_smiles"]
     opt = data["optimized_smiles"]
 
-    from evaluation.properties import compute_logp, compute_qed, compute_sa
-    prop_map = {"logP": compute_logp, "QED": compute_qed, "SA": compute_sa}
+    from evaluation.properties import compute_logp, compute_qed, compute_sa, compute_penalized_logp
+    prop_map = {
+        "logP": compute_logp,
+        "QED": compute_qed,
+        "SA": compute_sa,
+        "penalized_logP": compute_penalized_logp,
+    }
     prop_fn = prop_map.get(data.get("target_property"), compute_logp)
 
     sims = similarity_to_seed(seed, opt)

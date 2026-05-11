@@ -1,5 +1,5 @@
 from .metrics import validity, uniqueness, novelty, diversity, reconstruction_accuracy
-from .properties import compute_logp, compute_qed, compute_sa, compute_all
+from .properties import compute_logp, compute_qed, compute_sa, compute_penalized_logp, compute_all
 from .optimization_metrics import (
     property_improvement,
     success_rate,

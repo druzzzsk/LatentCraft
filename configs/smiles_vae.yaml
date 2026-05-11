@@ -10,13 +10,15 @@ model:
   gru_dim: 488
 
 training:
-  epochs: 100
+  epochs: 120
   batch_size: 128
   lr: 0.0004
-  kl_anneal_start: 40   # centre of sigmoid — KL starts rising later
-  kl_anneal_slope: 0.2  # gentler slope → no loss spikes during warmup
+  kl_anneal_start: 29   # paper: sigmoid centred at epoch 29
+  kl_anneal_slope: 0.51 # paper: steeper slope for faster KL activation
   kl_weight: 1.0
-  early_stopping_patience: 15  # epochs without val_recon improvement before stopping
+  early_stopping_patience: 0   # 0 = disabled; train full 120 epochs like the paper
+  prop_weight: 1.0             # joint property prediction loss weight
+  prop_dropout: 0.15           # predictor dropout (paper: 0.15 for joint mode)
 
 data:
   path: data/zinc_250.csv
