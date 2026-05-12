@@ -33,7 +33,7 @@ from evaluation import plot_comparison_table, plot_property_vs_similarity, plot_
 from evaluation import compute_logp, compute_qed, compute_sa
 from evaluation.visualization import EDA_PALETTE, apply_eda_plot_style
 from evaluation import validity, property_improvement, success_rate, similarity_to_seed
-from evaluation.metrics import uniqueness, diversity, novelty
+from evaluation.metrics import diversity, novelty
 
 PROP_FN = {
     "logP": compute_logp,
@@ -71,7 +71,6 @@ def recalculate_metrics(result, train_smiles=None):
         "mean_improvement": mean_imp,
         "success_rate": s_rate,
         "mean_similarity": mean_sim,
-        "uniqueness": uniqueness(opts),
         "diversity": diversity(opts),
         "novelty": novelty(opts, train_smiles) if train_smiles else None,
         "similarities": sims,
@@ -95,7 +94,6 @@ def print_summary(name, metrics):
         ("Mean improvement", metrics.get("mean_improvement")),
         ("Success rate",     metrics.get("success_rate")),
         ("Mean similarity",  metrics.get("mean_similarity")),
-        ("Uniqueness",       metrics.get("uniqueness")),
         ("Diversity",        metrics.get("diversity")),
         ("Novelty",          metrics.get("novelty")),
     ]
@@ -189,7 +187,7 @@ def plot_model_comparison_bar(metrics_map, out_dir):
     """
     metric_names = [
         "validity", "mean_improvement", "success_rate",
-        "mean_similarity", "uniqueness", "diversity", "novelty",
+        "mean_similarity", "diversity", "novelty",
     ]
     labels = []
     data = {m: [] for m in metric_names}
@@ -290,7 +288,7 @@ def main():
         key = (parts[0], parts[1]) if len(parts) == 2 else (name, "")
         scalar_keys = (
             "validity", "mean_improvement", "success_rate",
-            "mean_similarity", "uniqueness", "diversity", "novelty",
+            "mean_similarity", "diversity", "novelty",
         )
         comparison_dict[key] = {
             k: v for k, v in metrics.items()
