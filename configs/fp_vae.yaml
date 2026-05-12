@@ -1,0 +1,31 @@
+experiment_name: fp_vae_zinc
+seed: 42
+
+model:
+  fp_dim: 2068          # Morgan FP (2048) + RDKit descriptors (20)
+  max_len: 120
+  hidden_dim: 196
+  gru_depth: 4
+  gru_dim: 488
+
+training:
+  epochs: 120
+  batch_size: 128
+  lr: 0.0004
+  kl_anneal_start: 29
+  kl_anneal_slope: 0.51
+  kl_weight: 1.0
+  early_stopping_patience: 0
+  prop_weight: 1.0
+  prop_dropout: 0.15
+
+data:
+  path: data/zinc_250.csv
+  max_len: 120
+  val_split: 0.1
+
+output:
+  dir: results/fp_vae
+  checkpoint: results/fp_vae/fp_vae.pt
+  charset: results/fp_vae/charset.yaml
+  predictor_checkpoint: results/fp_vae/property_predictor.pt

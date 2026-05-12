@@ -10,3 +10,4 @@ pyyaml
 torch
 botorch
 cma
+selfies

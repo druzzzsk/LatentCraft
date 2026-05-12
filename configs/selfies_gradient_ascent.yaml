@@ -1,0 +1,32 @@
+experiment_name: selfies_gradient_ascent_logp
+seed: 42
+
+model:
+  checkpoint: results/selfies_vae/selfies_vae.pt
+  charset: results/selfies_vae/charset.yaml
+  max_len: 100
+  hidden_dim: 196
+  conv_depth: 4
+  conv_start_filters: 16
+  gru_depth: 4
+  gru_dim: 488
+
+predictor:
+  checkpoint: results/selfies_vae/property_predictor.pt
+  hidden_dim: 196
+
+optimizer:
+  name: gradient_ascent
+  steps: 80
+  lr: 0.01
+  z_penalty: 0.1
+  n_seeds: 100
+  target_property: logP
+
+data:
+  path: data/zinc_250.csv
+  max_len: 100
+
+output:
+  dir: results/selfies_vae
+  results_file: results/selfies_vae/gradient_ascent_results.json

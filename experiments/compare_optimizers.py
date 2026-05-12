@@ -9,15 +9,21 @@
         --cma      results/cma_es_results.json \
         --out      results/comparison
 
-Использование — несколько моделей (добавляем JT-VAE):
+Использование — несколько моделей:
     python experiments/compare_optimizers.py \
-        --gradient    results/gradient_ascent_results.json \
-        --bo          results/bayesian_opt_results.json \
-        --cma         results/cma_es_results.json \
-        --jt-gradient results/jtvae_gradient_ascent_results.json \
-        --jt-bo       results/jtvae_bayesian_opt_results.json \
-        --jt-cma      results/jtvae_cma_es_results.json \
-        --out         results/comparison
+        --gradient         results/smiles_vae/gradient_ascent_results.json \
+        --bo               results/smiles_vae/bayesian_opt_results.json \
+        --cma              results/smiles_vae/cma_es_results.json \
+        --jt-gradient      results/jtvae/gradient_ascent_results.json \
+        --jt-bo            results/jtvae/bayesian_opt_results.json \
+        --jt-cma           results/jtvae/cma_es_results.json \
+        --selfies-gradient results/selfies_vae/gradient_ascent_results.json \
+        --selfies-bo       results/selfies_vae/bayesian_opt_results.json \
+        --selfies-cma      results/selfies_vae/cma_es_results.json \
+        --fp-gradient      results/fp_vae/gradient_ascent_results.json \
+        --fp-bo            results/fp_vae/bayesian_opt_results.json \
+        --fp-cma           results/fp_vae/cma_es_results.json \
+        --out              results/comparison
 """
 import argparse
 import json
@@ -238,6 +244,14 @@ def main():
     parser.add_argument("--jt-gradient", default=None, dest="jt_gradient", help="jtvae + gradient_ascent results")
     parser.add_argument("--jt-bo", default=None, dest="jt_bo", help="jtvae + bayesian_opt results")
     parser.add_argument("--jt-cma", default=None, dest="jt_cma", help="jtvae + cma_es results")
+    # SELFIES-VAE results
+    parser.add_argument("--selfies-gradient", default=None, dest="selfies_gradient", help="selfies_vae + gradient_ascent results")
+    parser.add_argument("--selfies-bo", default=None, dest="selfies_bo", help="selfies_vae + bayesian_opt results")
+    parser.add_argument("--selfies-cma", default=None, dest="selfies_cma", help="selfies_vae + cma_es results")
+    # FP-VAE results
+    parser.add_argument("--fp-gradient", default=None, dest="fp_gradient", help="fp_vae + gradient_ascent results")
+    parser.add_argument("--fp-bo", default=None, dest="fp_bo", help="fp_vae + bayesian_opt results")
+    parser.add_argument("--fp-cma", default=None, dest="fp_cma", help="fp_vae + cma_es results")
     parser.add_argument("--out", default="results/comparison", help="Output directory")
     args = parser.parse_args()
 
@@ -259,6 +273,20 @@ def main():
         results_map["jtvae / bo"] = load_result(args.jt_bo)
     if args.jt_cma:
         results_map["jtvae / cma-es"] = load_result(args.jt_cma)
+    # SELFIES-VAE
+    if args.selfies_gradient:
+        results_map["selfies-vae / gradient"] = load_result(args.selfies_gradient)
+    if args.selfies_bo:
+        results_map["selfies-vae / bo"] = load_result(args.selfies_bo)
+    if args.selfies_cma:
+        results_map["selfies-vae / cma-es"] = load_result(args.selfies_cma)
+    # FP-VAE
+    if args.fp_gradient:
+        results_map["fp-vae / gradient"] = load_result(args.fp_gradient)
+    if args.fp_bo:
+        results_map["fp-vae / bo"] = load_result(args.fp_bo)
+    if args.fp_cma:
+        results_map["fp-vae / cma-es"] = load_result(args.fp_cma)
 
     results_map = {k: v for k, v in results_map.items() if v is not None}
 

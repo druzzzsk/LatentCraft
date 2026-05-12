@@ -1,0 +1,31 @@
+experiment_name: fp_gradient_ascent_logp
+seed: 42
+
+model:
+  checkpoint: results/fp_vae/fp_vae.pt
+  charset: results/fp_vae/charset.yaml
+  fp_dim: 2068
+  max_len: 120
+  hidden_dim: 196
+  gru_depth: 4
+  gru_dim: 488
+
+predictor:
+  checkpoint: results/fp_vae/property_predictor.pt
+  hidden_dim: 196
+
+optimizer:
+  name: gradient_ascent
+  steps: 80
+  lr: 0.01
+  z_penalty: 0.1
+  n_seeds: 100
+  target_property: logP
+
+data:
+  path: data/zinc_250.csv
+  max_len: 120
+
+output:
+  dir: results/fp_vae
+  results_file: results/fp_vae/gradient_ascent_results.json
