@@ -37,7 +37,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from evaluation import plot_comparison_table, plot_property_vs_similarity, plot_pareto_front
 from evaluation import compute_logp, compute_qed, compute_sa
-from evaluation.visualization import EDA_PALETTE, apply_eda_plot_style
+from evaluation.visualization import (
+    apply_eda_plot_style, _series_style, _display_name, _make_shades,
+    MODEL_COLORS, MODEL_DISPLAY, OPTIMIZER_LABELS, EDA_PALETTE,
+)
 from evaluation import validity, property_improvement, success_rate, similarity_to_seed
 from evaluation.metrics import diversity, novelty
 
@@ -110,15 +113,9 @@ def print_summary(name, metrics):
             print(f"  {label:<20} {v:.4f}")
 
 
-def _series_colors(results_map):
-    names = list(results_map.keys())
-    return {n: EDA_PALETTE[i % len(EDA_PALETTE)] for i, n in enumerate(names)}
-
-
 def plot_trajectories(results_map, out_dir):
     """Кривые оптимизации (mean best property по шагам) для всех оптимизаторов / моделей."""
     fig, ax = plt.subplots(figsize=(9, 5))
-    colors = _series_colors(results_map)
 
     for name, result in results_map.items():
         if result is None or "trajectory" not in result:
@@ -127,14 +124,18 @@ def plot_trajectories(results_map, out_dir):
         if not traj:
             continue
         steps, values = zip(*traj)
+        color, style = _series_style(name)
         ax.plot(
-            steps, values, marker="o", markersize=3, label=name, color=colors[name]
+            steps, values,
+            marker=style["marker"], markersize=4,
+            linestyle=style["linestyle"],
+            label=_display_name(name), color=color,
         )
 
     ax.set_xlabel("Step")
     ax.set_ylabel("Mean best property value")
     ax.set_title("Optimization trajectories")
-    ax.legend()
+    ax.legend(loc="best", framealpha=0.8)
     plt.tight_layout()
     fig.savefig(os.path.join(out_dir, "trajectories.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)
@@ -151,7 +152,6 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
     n_rows = (len(valid_names) + n_cols - 1) // n_cols
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows), squeeze=False)
     axes_flat = [ax for row in axes for ax in row]
-    colors = _series_colors(results_map)
 
     for ax, name in zip(axes_flat, valid_names):
         m = metrics_map[name]
@@ -160,21 +160,15 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
                     if i is not None and s is not None]
 
         if not imps:
-            ax.set_title(f"{name}\n(no valid data)")
+            ax.set_title(f"{_display_name(name)}\n(no valid data)")
             continue
 
-        ax.scatter(
-            sims_raw,
-            imps,
-            alpha=0.55,
-            edgecolors="none",
-            s=15,
-            color=colors[name],
-        )
-        ax.axhline(0, color="#2C3E50", linewidth=0.8, linestyle="--", alpha=0.6)
-        ax.set_xlabel("Tanimoto similarity to seed")
-        ax.set_ylabel("Property improvement (Δ)")
-        ax.set_title(name)
+        color, _ = _series_style(name)
+        ax.scatter(sims_raw, imps, alpha=0.55, edgecolors="none", s=15, color=color)
+        ax.axhline(0, color="#555", linewidth=0.8, linestyle="--", alpha=0.5)
+        ax.set_xlabel("Tanimoto similarity")
+        ax.set_ylabel("Δ property")
+        ax.set_title(_display_name(name))
 
     for ax in axes_flat[len(valid_names):]:
         ax.set_visible(False)
@@ -188,44 +182,87 @@ def plot_scatter_grid(results_map, metrics_map, out_dir):
 
 def plot_model_comparison_bar(metrics_map, out_dir):
     """
-    Bar chart сравнения моделей и оптимизаторов по всем метрикам.
-    Строится только если есть результаты более чем для одной модели.
+    Grouped bar chart: группы = модели, бары внутри = оптимизаторы (GA/BO/CMA-ES).
+    Цвет кодирует модель, штриховка — оптимизатор.
+    Единая легенда снизу, без дублирующих x-tick подписей.
     """
+    from matplotlib.patches import Patch
+
     metric_names = [
         "validity", "mean_improvement", "success_rate",
         "mean_similarity", "diversity", "novelty",
     ]
-    labels = []
-    data = {m: [] for m in metric_names}
 
+    # Парсим имена вида "smiles-vae / gradient" → (model, optimizer)
+    data_by_key = {}
+    seen_models, seen_opts = [], []
     for name, metrics in metrics_map.items():
         if metrics is None:
             continue
-        labels.append(name)
-        for m in metric_names:
-            v = metrics.get(m)
-            data[m].append(v if v is not None else 0.0)
+        parts = [p.strip() for p in name.split("/")]
+        model = parts[0]
+        opt = parts[1] if len(parts) > 1 else ""
+        if model not in seen_models:
+            seen_models.append(model)
+        if opt not in seen_opts:
+            seen_opts.append(opt)
+        data_by_key[(model, opt)] = metrics
 
-    if len(labels) < 2:
+    if len(data_by_key) < 2:
         return
 
-    x = np.arange(len(labels))
-    color_by_name = _series_colors(
-        {k: v for k, v in metrics_map.items() if v is not None}
-    )
-    bar_colors = [color_by_name[l] for l in labels]
-    n_cols = min(4, len(metric_names))
+    # 3 оттенка (светлый / средний / тёмный) для каждой модели — по оптимизаторам
+    model_shades = {
+        m: _make_shades(MODEL_COLORS.get(m, EDA_PALETTE[i % len(EDA_PALETTE)]))
+        for i, m in enumerate(seen_models)
+    }
+
+    # Группы на оси X = оптимизаторы, бары внутри = модели
+    x = np.arange(len(seen_opts))
+    bar_width = 0.7 / max(len(seen_models), 1)
+
+    n_cols = min(3, len(metric_names))
     n_rows = (len(metric_names) + n_cols - 1) // n_cols
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(5 * n_cols, 4 * n_rows), squeeze=False)
     axes_flat = [ax for row in axes for ax in row]
+
     for ax, metric in zip(axes_flat, metric_names):
-        ax.bar(x, data[metric], color=bar_colors, edgecolor="white", linewidth=0.8)
+        for i, model in enumerate(seen_models):
+            values = []
+            for j, opt in enumerate(seen_opts):
+                m = data_by_key.get((model, opt))
+                v = m.get(metric) if m else None
+                values.append(v if v is not None else 0.0)
+
+            offset = (i - len(seen_models) / 2 + 0.5) * bar_width
+            # Для каждого оптимизатора — свой оттенок модели
+            shades = model_shades[model]
+            bar_colors = [shades[j] for j in range(len(seen_opts))]
+            ax.bar(x + offset, values, bar_width, color=bar_colors, edgecolor="white", linewidth=0.6)
+
         ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=30, ha="right", fontsize=8)
+        ax.set_xticklabels([OPTIMIZER_LABELS.get(o, o) for o in seen_opts], fontsize=11)
         ax.set_title(metric.replace("_", " ").capitalize())
+        ax.yaxis.grid(True, linewidth=0.5, alpha=0.7)
+        ax.set_axisbelow(True)
 
     for ax in axes_flat[len(metric_names):]:
         ax.set_visible(False)
+
+    # Легенда: только модели с цветами
+    model_patches = [
+        Patch(facecolor=MODEL_COLORS.get(m, EDA_PALETTE[i % len(EDA_PALETTE)]),
+              label=MODEL_DISPLAY.get(m, m))
+        for i, m in enumerate(seen_models)
+    ]
+    fig.legend(
+        handles=model_patches,
+        loc="lower center",
+        ncol=len(model_patches),
+        frameon=False,
+        fontsize=10,
+        bbox_to_anchor=(0.5, -0.01),
+    )
 
     fig.suptitle("Model × Optimizer comparison", fontsize=13)
     plt.tight_layout()

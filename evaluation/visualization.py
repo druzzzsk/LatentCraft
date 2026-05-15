@@ -3,20 +3,86 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from .optimization_metrics import pareto_front
 
-# Как в notebooks/eda.ipynb
-EDA_PALETTE = [
-    "#F4A261",
-    "#E9C46A",
-    "#F6BD8D",
-    "#F7D5B1",
-    "#E76F51",
-    "#FDF0E0",
-]
+# Приглушённые цвета по моделям — читаемые, не кричащие
+MODEL_COLORS = {
+    "smiles-vae": "#7A9EC8",
+    "jtvae":      "#C47A7A",
+    "selfies-vae":"#D4A070",
+    "fp-vae":     "#A494C5",
+}
+MODEL_DISPLAY = {
+    "smiles-vae": "SMILES-VAE",
+    "jtvae":      "JT-VAE",
+    "selfies-vae":"SELFIES-VAE",
+    "fp-vae":     "FP-VAE",
+}
+# Стиль линий и маркеров по оптимизаторам
+OPTIMIZER_STYLES = {
+    "gradient": {"linestyle": "-",  "marker": "o"},
+    "bo":       {"linestyle": "--", "marker": "s"},
+    "cma-es":   {"linestyle": "-.", "marker": "^"},
+}
+OPTIMIZER_LABELS = {
+    "gradient": "GA",
+    "bo":       "BO",
+    "cma-es":   "CMA-ES",
+}
+OPT_HATCHES = {
+    "gradient": "",
+    "bo":       "///",
+    "cma-es":   "...",
+}
+# Запасная палитра для случаев, когда структура имён неизвестна
+EDA_PALETTE = list(MODEL_COLORS.values()) + ["#64B5CD", "#CCB974"]
+
+HEATMAP_CMAP = "Blues"
 
 
 def apply_eda_plot_style():
+    plt.rcParams.update({
+        "font.size": 11,
+        "axes.titlesize": 13,
+        "axes.labelsize": 11,
+        "xtick.labelsize": 10,
+        "ytick.labelsize": 10,
+        "legend.fontsize": 10,
+    })
     sns.set_theme(style="whitegrid")
     sns.set_palette(EDA_PALETTE)
+
+
+def _series_style(name):
+    """Возвращает (color, style) по имени вида 'model / optimizer'."""
+    parts = [p.strip() for p in name.split("/")]
+    model = parts[0] if parts else name
+    optimizer = parts[1] if len(parts) > 1 else ""
+    color = MODEL_COLORS.get(model, EDA_PALETTE[hash(model) % len(EDA_PALETTE)])
+    style = OPTIMIZER_STYLES.get(optimizer, {"linestyle": "-", "marker": "o"})
+    return color, style
+
+
+def _make_shades(hex_color):
+    """Возвращает (светлый, средний, тёмный) для одного базового цвета."""
+    r, g, b = int(hex_color[1:3], 16), int(hex_color[3:5], 16), int(hex_color[5:7], 16)
+    light = "#{:02x}{:02x}{:02x}".format(
+        int(r + (255 - r) * 0.50),
+        int(g + (255 - g) * 0.50),
+        int(b + (255 - b) * 0.50),
+    )
+    dark = "#{:02x}{:02x}{:02x}".format(
+        int(r * 0.65), int(g * 0.65), int(b * 0.65)
+    )
+    return light, hex_color, dark
+
+
+def _display_name(name):
+    """Преобразует 'smiles-vae / gradient' → 'SMILES-VAE · GA'."""
+    parts = [p.strip() for p in name.split("/")]
+    model = MODEL_DISPLAY.get(parts[0], parts[0].upper()) if parts else name
+    if len(parts) > 1:
+        opt = OPTIMIZER_LABELS.get(parts[1], parts[1].upper())
+        return f"{model} · {opt}"
+    return model
 
 
 def plot_pearson_correlation_heatmap(corr, title="Pearson correlation", figsize=(6, 6)):
@@ -26,7 +92,7 @@ def plot_pearson_correlation_heatmap(corr, title="Pearson correlation", figsize=
         corr,
         annot=True,
         fmt=".2f",
-        cmap=sns.light_palette(EDA_PALETTE[0], as_cmap=True),
+        cmap=HEATMAP_CMAP,
         vmin=-1,
         vmax=1,
         center=0,
@@ -119,6 +185,8 @@ def plot_comparison_table(results_dict, title="Model × Optimizer × Metric"):
     rows = sorted(set(k[0] for k in results_dict))
     cols = sorted(set(k[1] for k in results_dict))
     metrics = sorted(set(m for v in results_dict.values() for m in v))
+    col_labels = [OPTIMIZER_LABELS.get(c, c.upper()) for c in cols]
+    row_labels = [MODEL_DISPLAY.get(r, r) for r in rows]
 
     n_metrics = len(metrics)
     fig, axes = plt.subplots(1, n_metrics, figsize=(5 * n_metrics, max(3, len(rows) * 0.6 + 1)))
@@ -144,20 +212,23 @@ def plot_comparison_table(results_dict, title="Model × Optimizer × Metric"):
             data,
             mask=mask,
             ax=ax,
-            xticklabels=cols,
-            yticklabels=rows,
+            xticklabels=col_labels,
+            yticklabels=row_labels,
             annot=True,
             fmt=".2f",
-            cmap=sns.light_palette(EDA_PALETTE[0], as_cmap=True),
+            cmap=HEATMAP_CMAP,
             vmin=vmin,
             vmax=vmax,
             center=center,
             square=True,
             linewidths=0.5,
+            annot_kws={"size": 10},
         )
-        ax.set_title(metric, fontweight="bold", fontsize=14)
+        ax.set_title(metric, fontweight="bold")
         ax.set_xlabel("Optimizer")
         ax.set_ylabel("Model")
+        ax.tick_params(axis="x", rotation=45, labelsize=10)
+        ax.tick_params(axis="y", rotation=0, labelsize=10)
 
     fig.suptitle(title, fontsize=14, fontweight="bold")
     plt.tight_layout()
